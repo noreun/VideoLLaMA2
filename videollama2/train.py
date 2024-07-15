@@ -38,7 +38,8 @@ import transformers
 from PIL import Image
 from decord import VideoReader, cpu
 from transformers.models.mixtral.modeling_mixtral import MixtralSparseMoeBlock
-
+from transformers import AutoTokenizer
+    
 sys.path.append('./')
 from videollama2 import conversation as conversation_lib
 from videollama2.model import *
@@ -105,7 +106,9 @@ class DataArguments:
     num_frames: Optional[int] = field(default=None)
     # Preprocess Arguments
     image_aspect_ratio: str = 'square'
-
+    # Time series arguments
+    is_timeseries: bool = False
+    text_path: Optional[str] = field(default=None)
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
@@ -234,8 +237,10 @@ def _add_speaker_and_signal(header, source, get_conversation=True):
             from_str = conversation_lib.default_conversation.roles[1]
         else:
             from_str = 'unknown'
-        sentence["value"] = (BEGIN_SIGNAL + from_str + ": " +
-                             sentence["value"] + END_SIGNAL)
+        
+        if not sentence["value"].startswith("<timeseries>"):
+            sentence["value"] = (BEGIN_SIGNAL + from_str + ": " +
+                                 sentence["value"] + END_SIGNAL)
         if get_conversation:
             conversation += sentence["value"]
     conversation += BEGIN_SIGNAL
@@ -640,11 +645,23 @@ class DataCollatorForSupervisedDataset(object):
 def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer,
                                 data_args) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
-    train_dataset = LazySupervisedDataset(
-        tokenizer=tokenizer,
-        data_path=data_args.data_path,
-        data_args=data_args
-    )
+
+    # Import TimeSeriesDataset here, inside the function 
+    from videollama2.model.timeseries_model import TimeSeriesDataset  
+
+    if data_args.is_timeseries:
+        train_dataset = TimeSeriesDataset(
+            ts_path=data_args.data_path, 
+            text_path=data_args.text_path,
+            tokenizer=tokenizer,
+            data_args=data_args,
+        )
+    else:
+        train_dataset = LazySupervisedDataset(
+            tokenizer=tokenizer,
+            data_path=data_args.data_path,
+            data_args=data_args
+        )
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
     return dict(train_dataset=train_dataset,
                 eval_dataset=None,
@@ -723,12 +740,13 @@ def train(attn_implementation=None):
     else:
         config = transformers.AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
         config._attn_implementation = attn_implementation
+        config.attention_bias = False
+        print(config)
         model = transformers.LlamaForCausalLM.from_pretrained(
             pretrain_model_name_or_path,
             config=config,
             cache_dir=training_args.cache_dir,
             torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
-            do_sample=True,
             **bnb_model_from_pretrained_args
         )
     model.config.use_cache = False
@@ -775,6 +793,10 @@ def train(attn_implementation=None):
         padding_side="right",
         use_fast=True,
     )
+
+    # Add the <timeseries> token 
+    tokenizer.add_special_tokens({"additional_special_tokens": ["<timeseries>"]})
+    model.resize_token_embeddings(len(tokenizer))
 
     if model_args.version == "v0":
         if tokenizer.pad_token is None:

@@ -24,9 +24,9 @@ from transformers import PretrainedConfig, AutoTokenizer, AutoModelForCausalLM, 
 from . import *
 from .multimodal_projector import load_mm_projector
 from ..constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
+from .timeseries_model import TimeSeriesLLaMAForCausalLM
 
-
-def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda", use_flash_attn=False, **kwargs):
+def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda", use_flash_attn=False, is_timeseries=False, **kwargs):
     if 'token' in kwargs:
         token = kwargs['token']
     else:
@@ -52,6 +52,24 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
 
     if use_flash_attn:
         kwargs['attn_implementation'] = 'flash_attention_2'
+
+    if is_timeseries:
+        # Load the TimeSeriesLLaMAForCausalLM model
+        model = TimeSeriesLLaMAForCausalLM.from_pretrained(
+            model_path, 
+            low_cpu_mem_usage=True, 
+            **kwargs
+        )
+        model.config.time_series_dim = 2000  # Set your time series feature dimension
+
+        # Initialize tokenizer, processor, and context_len for time series
+        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)  # Load tokenizer
+        tokenizer.add_special_tokens({"additional_special_tokens": ["<timeseries>"]})  # Add special token
+        model.resize_token_embeddings(len(tokenizer))
+        processor = None  # No image/video processor needed
+        context_len = model.config.max_position_embeddings  # Get context length from model config 
+
+        return tokenizer, model, processor, context_len # Return early
 
     if "videollama" in model_name.lower() or 'vlb' in model_name.lower():
         # NOTE: lora model loading

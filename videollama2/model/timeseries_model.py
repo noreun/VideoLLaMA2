@@ -1,5 +1,6 @@
 import os
 import pickle
+import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
@@ -26,6 +27,92 @@ from videollama2.train import (
 )
 from videollama2.videollama2_trainer import VideoLLaMA2Trainer
 
+
+class TimeSeriesDataset(Dataset):
+    """Dataset for time series data and associated text from a CSV."""
+
+    def __init__(self, ts_path, text_path, tokenizer, data_args, prediction_target='description'):
+        super().__init__()
+        self.tokenizer = tokenizer
+        self.ts_path = ts_path
+        self.text_path = text_path
+        self.data_args = data_args
+        self.prediction_target = prediction_target  # 'description', 'valence', or 'emotion'
+
+        # Load CSV file
+        self.data_df = pd.read_csv(text_path)
+
+        # Get list of time series files
+        self.ts_files = [f for f in os.listdir(ts_path) if f.endswith('_ts.pkl')]
+
+    def __len__(self):
+        return len(self.ts_files)
+
+    def __getitem__(self, idx):
+        # Load time series data
+        ts_file = self.ts_files[idx]
+        ts_file_path = os.path.join(self.ts_path, ts_file)
+        with open(ts_file_path, 'rb') as f:
+            time_series_data, _ = pickle.load(f)  # Ignore 'pixels'
+
+        # Transpose time series to (time, features) format
+        time_series_data = torch.tensor(time_series_data.T, dtype=torch.float)
+        
+        # For now, instead of segmenting the time series, we'll just truncate it
+        time_series_data = time_series_data[:2000, :]
+
+        # # Time Series Segmentation
+        # time_steps = time_series_data.shape[0] 
+        # patch_size = 150  # Example starting patch size
+        # num_patches = time_steps // patch_size 
+
+        # # Adjust patch size if needed to get approximately 16 patches
+        # while num_patches < 16 and patch_size > 1:  
+        #     patch_size -= 1
+        #     num_patches = time_steps // patch_size
+
+        # # Create patches and embed them
+        # patches = [time_series_data[i * patch_size:(i + 1) * patch_size, :] 
+        #            for i in range(num_patches)] 
+
+        # # Pad the last patch if necessary
+        # if time_steps % patch_size != 0:
+        #     padding = torch.zeros((patch_size - (time_steps % patch_size), time_series_data.shape[1]), 
+        #                             dtype=time_series_data.dtype)
+        #     patches[-1] = torch.cat((patches[-1], padding), dim=0) 
+
+        # # Simple patch embedding layer (replace with more complex embedding if needed)
+        # patch_embedding = nn.Linear(patch_size * time_series_data.shape[1], self.data_args.time_series_embedding_dim) 
+        # embedded_patches = torch.stack([patch_embedding(patch.flatten()) for patch in patches]) 
+
+        # Get record ID from file name
+        record_id = ts_file.split('_')[0]
+
+        # Find corresponding row in the CSV
+        row = self.data_df[self.data_df['video_names'] == f"{record_id}.mp4"].iloc[0]
+
+        # Select the target for prediction
+        if self.prediction_target == 'description':
+            target_text = row['descriptions']
+        elif self.prediction_target == 'valence':
+            target_text = str(row['overall'])  # Convert valence to string
+        elif self.prediction_target == 'emotion':
+            target_text = row['one_word']
+        else:
+            raise ValueError(f"Invalid prediction_target: {self.prediction_target}")
+
+        # Add the special token for time series (only for 'description' target)
+        if self.prediction_target == 'description':
+            target_text = '<timeseries>\n' + target_text
+
+        # Process the text data
+        source = [{"from": "human", "value": target_text}]
+        data_dict = preprocess([source], self.tokenizer)
+
+        # Add the time series data to the dictionary
+        data_dict['time_series'] = time_series_data
+
+        return data_dict
 
 class TimeSeriesProjector(nn.Module):
     """Projector for time series data."""
