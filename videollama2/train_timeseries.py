@@ -1,3 +1,4 @@
+
 # Adopted from https://github.com/haotian-liu/LLaVA. Below is the original copyright:
 # Adopted from https://github.com/lm-sys/FastChat. Below is the original copyright:
 # Adopted from tatsu-lab@stanford_alpaca. Below is the original copyright:
@@ -38,8 +39,7 @@ import transformers
 from PIL import Image
 from decord import VideoReader, cpu
 from transformers.models.mixtral.modeling_mixtral import MixtralSparseMoeBlock
-from transformers import AutoTokenizer
-    
+
 sys.path.append('./')
 from videollama2 import conversation as conversation_lib
 from videollama2.model import *
@@ -109,6 +109,11 @@ class DataArguments:
     # Time series arguments
     is_timeseries: bool = False
     text_path: Optional[str] = field(default=None)
+    time_series_embedding_dim: int = field(
+        default=1280,  # You can adjust this
+        metadata={"help": "Dimension of the time series embedding."}
+    )
+
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
@@ -467,8 +472,7 @@ def preprocess_plain(
     return dict(input_ids=input_ids, labels=targets)
 
 
-def preprocess(
-    sources: Sequence[str],
+def preprocess(sources: Sequence[str],
     tokenizer: transformers.PreTrainedTokenizer,
     MODAL_list: list = []
 ) -> Dict:
@@ -696,12 +700,21 @@ def train(attn_implementation=None):
                 bnb_4bit_quant_type=training_args.quant_type # {'fp4', 'nf4'}
             )
         ))
-    if model_args.pretrain_model_name_or_path is not None:
-        assert os.path.exists(model_args.pretrain_model_name_or_path)
-        pretrain_model_name_or_path = model_args.pretrain_model_name_or_path
-    else:
-        pretrain_model_name_or_path = model_args.model_name_or_path
-    if model_args.vision_tower is not None:
+
+    if data_args.is_timeseries:
+        print("Loading time series LLM...")
+        config = transformers.AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
+        config._attn_implementation = attn_implementation
+        config.time_series_dim = data_args.time_series_embedding_dim
+        model = TimeSeriesLLaMAForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            config=config,
+            cache_dir=training_args.cache_dir,
+            torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
+            do_sample=True,
+            **bnb_model_from_pretrained_args
+        )
+    elif model_args.vision_tower is not None:
         if 'mistral' in model_args.model_name_or_path.lower():
             config = transformers.AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
             config._attn_implementation = attn_implementation
@@ -805,7 +818,7 @@ def train(attn_implementation=None):
         model = get_peft_model(model, lora_config)
 
 
-    tokenizer = transformers.AutoTokenizer.from_pretrained(
+    tokenizer = AutoTokenizer.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         model_max_length=training_args.model_max_length,
