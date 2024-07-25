@@ -11,6 +11,9 @@ dist
 *.jsonl
 log_dir*/
 temp*/
+*.lock
+cache/
+*.zip
 
 # Data
 !**/alpaca-data-conversation.json
