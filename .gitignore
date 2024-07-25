@@ -17,6 +17,7 @@ cache/
 
 # Data
 !**/alpaca-data-conversation.json
+config.json
 
 # Editor
 .idea

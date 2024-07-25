@@ -1,5 +1,6 @@
 import os
 import pickle
+import json
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -261,8 +262,14 @@ def main():
     # model = TimeSeriesMistral(mistral_model, time_series_projector)
     model = TimeSeriesMistral(mistral_model, time_series_projector, attn_implementation="eager")
 
-    ts_path = "/mnt/nfs/proj/hnl_downloaded_public_data/PFCTS/"
-    text_path = "/mnt/nfs/proj/hnl_downloaded_public_data/clip_description.csv"
+    # Load configuration
+    with open('config.json', 'r') as config_file:
+        local_config = json.load(config_file)
+
+    ts_path = config.get('ts_path')
+    text_path = config.get('text_path')
+    #ts_path = "/mnt/nfs/proj/hnl_downloaded_public_data/PFCTS/"
+    #text_path = "/mnt/nfs/proj/hnl_downloaded_public_data/clip_description.csv"
     prediction_target = 'description' # 'description', 'valence', 'emotion'
 
     train_dataset = TimeSeriesDataset(ts_path, text_path, tokenizer, prediction_target=prediction_target)
