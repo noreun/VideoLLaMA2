@@ -308,7 +308,7 @@ def main():
         gradient_accumulation_steps=8,
         save_steps=1000,
         save_total_limit=2,
-        fp16=True,  # Enable mixed precision training
+        # fp16=True,  # Enable mixed precision training
         report_to="none",  # Disable wandb
     )
 
