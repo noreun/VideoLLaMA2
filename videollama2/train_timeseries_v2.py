@@ -332,10 +332,10 @@ def main():
 
     # trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset)
 
-    if latest_checkpoint:
-        trainer.train(resume_from_checkpoint=latest_checkpoint)
-    else:
-        trainer.train()
+    # if latest_checkpoint:
+    #     trainer.train(resume_from_checkpoint=latest_checkpoint)
+    # else:
+    #     trainer.train()
 
     trainer.train()
 
