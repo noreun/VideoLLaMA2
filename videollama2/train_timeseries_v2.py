@@ -179,20 +179,20 @@ class TimeSeriesMistral(PreTrainedModel):
             # Extract the logits corresponding to the text tokens
             text_logits = outputs.logits[:, :input_ids.shape[1], :]  
 
-            print(labels)
-            print(input_ids)
+            # print(labels)
+            # print(input_ids)
 
             # Manually shift the labels
             shifted_labels = torch.roll(labels, shifts=-1, dims=1)
             shifted_labels[:, -1] = -100  # Set the last token to the ignore index
 
-            print(shifted_labels)
-            print(torch.unique(shifted_labels))
+            # print(shifted_labels)
+            # print(torch.unique(shifted_labels))
 
-            print(self.mistral_model.config.vocab_size)
+            # print(self.mistral_model.config.vocab_size)
 
             # Convert shifted_labels to one-hot encoding
-            one_hot_labels = F.one_hot(shifted_labels, num_classes=self.mistral_model.config.vocab_size).float()
+            # one_hot_labels = F.one_hot(shifted_labels, num_classes=self.mistral_model.config.vocab_size).float()
 
             print("embeddings:")
             print(text_embeddings.shape)
@@ -210,9 +210,9 @@ class TimeSeriesMistral(PreTrainedModel):
             print(shifted_labels.__class__)
             print(shifted_labels.shape)
 
-            print("One-hot labels:")
-            print(one_hot_labels.shape)
-            print(one_hot_labels.dtype)
+            # print("One-hot labels:")
+            # print(one_hot_labels.shape)
+            # print(one_hot_labels.dtype)
 
             print("Text logits:")
             print(text_logits.shape)
@@ -228,11 +228,14 @@ class TimeSeriesMistral(PreTrainedModel):
                         
             if torch.isnan(text_logits).any() or torch.isinf(text_logits).any():
                 print("Warning: NaN or Inf values in text_logits!")
-            if torch.isnan(one_hot_labels).any() or torch.isinf(one_hot_labels).any():
-                print("Warning: NaN or Inf values in one_hot_labels!")
+            # if torch.isnan(one_hot_labels).any() or torch.isinf(one_hot_labels).any():
+                # print("Warning: NaN or Inf values in one_hot_labels!")
 
             # Calculate the loss using only the text logits and one-hot labels
-            loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), shifted_labels)
+
+            loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), shifted_labels.view(-1), ignore_index=-100)
+
+            # loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), shifted_labels)
             # loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), one_hot_labels.view(-1, one_hot_labels.size(-1)))
 
             # loss = F.cross_entropy(outputs.logits, one_hot_labels)  # Use one-hot labels 
