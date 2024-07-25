@@ -315,11 +315,20 @@ def main():
     # Define the Data Collator
     data_collator = DataCollatorWithPaddingAndTimeSeries(tokenizer=tokenizer, mlm=False)
 
+    # Check for the latest checkpoint
+    checkpoints = [os.path.join(training_args.output_dir, d) for d in os.listdir(training_args.output_dir) if d.startswith("checkpoint-")]
+    if checkpoints:
+        latest_checkpoint = max(checkpoints, key=os.path.getctime)
+        print(f"Resuming from checkpoint: {latest_checkpoint}")
+    else:
+        latest_checkpoint = None
+
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        data_collator=data_collator
+        data_collator=data_collator,
+        resume_from_checkpoint=latest_checkpoint
     )
 
     # trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset)
