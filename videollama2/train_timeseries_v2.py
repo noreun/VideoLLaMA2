@@ -198,6 +198,10 @@ class TimeSeriesMistral(PreTrainedModel):
             print(labels.__class__)
             print(labels.shape)
 
+            print("Shifted labels:")
+            print(shifted_labels.__class__)
+            print(shifted_labels.shape)
+
             print("One-hot labels:")
             print(one_hot_labels.shape)
             print(one_hot_labels.dtype)
@@ -210,9 +214,18 @@ class TimeSeriesMistral(PreTrainedModel):
             print(outputs.__class__)
             print(outputs.logits.shape)
             print(outputs.logits.dtype)
-            
+
+            print("text_logits after view:")
+            print(text_logits.view(-1, text_logits.size(-1)).shape)
+                        
+            if torch.isnan(text_logits).any() or torch.isinf(text_logits).any():
+                print("Warning: NaN or Inf values in text_logits!")
+            if torch.isnan(one_hot_labels).any() or torch.isinf(one_hot_labels).any():
+                print("Warning: NaN or Inf values in one_hot_labels!")
+
             # Calculate the loss using only the text logits and one-hot labels
-            loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), one_hot_labels.view(-1, one_hot_labels.size(-1)))
+            loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), shifted_labels)
+            # loss = F.cross_entropy(text_logits.view(-1, text_logits.size(-1)), one_hot_labels.view(-1, one_hot_labels.size(-1)))
 
             # loss = F.cross_entropy(outputs.logits, one_hot_labels)  # Use one-hot labels 
             # loss = outputs.loss # Use the loss computed by Mistral
