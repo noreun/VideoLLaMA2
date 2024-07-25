@@ -266,8 +266,8 @@ def main():
     with open('config.json', 'r') as config_file:
         local_config = json.load(config_file)
 
-    ts_path = config.get('ts_path')
-    text_path = config.get('text_path')
+    ts_path = local_config.get('ts_path')
+    text_path = local_config.get('text_path')
     #ts_path = "/mnt/nfs/proj/hnl_downloaded_public_data/PFCTS/"
     #text_path = "/mnt/nfs/proj/hnl_downloaded_public_data/clip_description.csv"
     prediction_target = 'description' # 'description', 'valence', 'emotion'
