@@ -328,10 +328,14 @@ def main():
         args=training_args,
         train_dataset=train_dataset,
         data_collator=data_collator,
-        resume_from_checkpoint=latest_checkpoint
     )
 
     # trainer = Trainer(model=model, args=training_args, train_dataset=train_dataset)
+
+    if latest_checkpoint:
+        trainer.train(resume_from_checkpoint=latest_checkpoint)
+    else:
+        trainer.train()
 
     trainer.train()
 
