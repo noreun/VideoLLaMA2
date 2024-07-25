@@ -179,9 +179,17 @@ class TimeSeriesMistral(PreTrainedModel):
             # Extract the logits corresponding to the text tokens
             text_logits = outputs.logits[:, :input_ids.shape[1], :]  
 
+            print(labels)
+            print(input_ids)
+
             # Manually shift the labels
             shifted_labels = torch.roll(labels, shifts=-1, dims=1)
             shifted_labels[:, -1] = -100  # Set the last token to the ignore index
+
+            print(shifted_labels)
+            print(torch.unique(shifted_labels))
+
+            print(self.mistral_model.config.vocab_size)
 
             # Convert shifted_labels to one-hot encoding
             one_hot_labels = F.one_hot(shifted_labels, num_classes=self.mistral_model.config.vocab_size).float()

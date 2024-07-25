@@ -1,7 +1,5 @@
 #!/bin/sh
 
-export HUGGING_FACE_HUB_TOKEN="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"
-
 python videollama2/train.py \
     --model_name_or_path "mistralai/Mistral-7B-Instruct-v0.2" \
     --data_path "/mnt/nfs/proj/hnl_downloaded_public_data/PFCTS/" \
