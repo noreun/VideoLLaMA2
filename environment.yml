@@ -1,4 +1,4 @@
-name: video_llama2
+name: ts_llama2
 channels:
   - conda-forge
   - defaults
@@ -64,7 +64,7 @@ dependencies:
   - zlib=1.2.13
   - pip:
       - accelerate==0.27.2
-      - flash-attn==2.5.9.post1
+#    - flash-attn==2.5.9.post1
       - huggingface-hub==0.24.0
       - tokenizers==0.19.1
       - transformers==4.42.4
