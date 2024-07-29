@@ -8,7 +8,8 @@ from .model.builder import load_pretrained_model
 from .conversation import conv_templates, SeparatorStyle
 from .mm_utils import process_video, tokenizer_MMODAL_token, get_model_name_from_path, KeywordsStoppingCriteria
 from .constants import NUM_FRAMES, DEFAULT_MMODAL_TOKEN, DEFAULT_MMODAL_START_TOKEN, DEFAULT_MMODAL_END_TOKEN, MMODAL_TOKEN_INDEX
-
+from .model.timeseries_model import TimeSeriesProjector, TimeSeriesMistral
+from .model.builder import load_pretrained_model # needed?
 
 def model_init(model_path=None):
     model_path = "DAMO-NLP-SG/VideoLLaMA2-7B" if model_path is None else model_path

@@ -61,3 +61,5 @@ work_dirs*/
 pretrained/
 publish_models/
 public_models/
+models/mistral_ts_projector/mistral_ts_projector/training_args.bin
+models/mistral_ts_projector/mistral_ts_projector/*.safetensors

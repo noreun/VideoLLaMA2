@@ -24,7 +24,7 @@ from transformers import PretrainedConfig, AutoTokenizer, AutoModelForCausalLM, 
 from . import *
 from .multimodal_projector import load_mm_projector
 from ..constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
-from .timeseries_model import TimeSeriesLLaMAForCausalLM
+#from .timeseries_model import TimeSeriesLLaMAForCausalLM
 
 def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda", use_flash_attn=False, is_timeseries=False, **kwargs):
     if 'token' in kwargs:

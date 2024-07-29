@@ -23,8 +23,19 @@ import torch.nn as nn
 from .multimodal_projector import load_mm_projector
 from .multimodal_encoder.builder import build_vision_tower
 from .multimodal_projector.builder import build_vision_projector
-from ..mm_utils import get_anyres_image_grid_shape
-from ..constants import NUM_FRAMES, IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN,DEFAULT_MMODAL_PATCH_TOKEN, DEFAULT_MMODAL_START_TOKEN, DEFAULT_MMODAL_END_TOKEN, MMODAL_TOKEN_INDEX
+
+import sys
+
+# Get the absolute path of the project root directory
+project_root = os.path.dirname(os.path.abspath(__file__)) 
+
+# Add the project root to sys.path
+rrd = f"{project_root}/../../"
+print(rrd)
+sys.path.insert(0, rrd) 
+
+from videollama2.mm_utils import get_anyres_image_grid_shape
+from videollama2.constants import NUM_FRAMES, IGNORE_INDEX, IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN,DEFAULT_MMODAL_PATCH_TOKEN, DEFAULT_MMODAL_START_TOKEN, DEFAULT_MMODAL_END_TOKEN, MMODAL_TOKEN_INDEX
 
 
 class Videollama2MetaModel:
